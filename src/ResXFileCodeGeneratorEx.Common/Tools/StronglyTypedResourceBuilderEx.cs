@@ -80,9 +80,9 @@ namespace DMKSoftware.CodeGenerators.Tools
         /// <param name="resourceList">An <see cref="T:System.Collections.IDictionary"></see> collection where each dictionary entry key/value pair is the name of a resource and the value of the resource.</param>
         /// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
         public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
-			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -96,9 +96,9 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
-			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources referenced in the specified collection.</summary>
@@ -114,7 +114,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName,
 			string generatedCodeNamespace, string resourcesNamespace, CodeDomProvider codeProvider,
-			bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == resourceList)
 				throw new ArgumentNullException("resourceList");
@@ -150,7 +150,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace,
-				resourcesNamespace, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+				resourcesNamespace, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -165,7 +165,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == resxFile)
 				throw new ArgumentNullException("resxFile");
@@ -191,7 +191,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace, resourcesNamespace,
-				codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+				codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		private static void AddGeneratedCodeAttributeForMember(CodeTypeMember typeMember)
@@ -596,7 +596,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 		private static CodeCompileUnit InternalCreate(Type callerType, Dictionary<string, ResourceData> resourceList,
 			string baseName, string generatedCodeNamespace, string resourcesNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == baseName)
 				throw new ArgumentNullException("baseName");
@@ -653,11 +653,14 @@ namespace DMKSoftware.CodeGenerators.Tools
 				CodeTypeReferenceOptions.GlobalReference);
 			classTypeDeclaration.CustomAttributes.Add(new CodeAttributeDeclaration(debuggerNonUserCodeTypeReference));
 
-			CodeAttributeDeclaration obfuscationAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObfuscationAttribute)));
-			obfuscationAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
-			obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("Exclude", new CodePrimitiveExpression(true)));
-			obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("ApplyToMembers", new CodePrimitiveExpression(true)));
-			classTypeDeclaration.CustomAttributes.Add(obfuscationAttributeTypeDeclaration);
+            if (generateObfuscationAttribute)
+            {
+                CodeAttributeDeclaration obfuscationAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObfuscationAttribute)));
+                obfuscationAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
+                obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("Exclude", new CodePrimitiveExpression(true)));
+                obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("ApplyToMembers", new CodePrimitiveExpression(true)));
+                classTypeDeclaration.CustomAttributes.Add(obfuscationAttributeTypeDeclaration);
+            }
 
 			CodeAttributeDeclaration suppressAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(SuppressMessageAttribute)));
 			suppressAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
