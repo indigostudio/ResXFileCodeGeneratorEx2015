@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace DMKSoftware.CodeGenerators
 {
+    [ComVisible(true)]
     public abstract class BaseCodeGenerator : IVsSingleFileGenerator
     {
         private string _codeFileNameSpace;

@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace DMKSoftware.CodeGenerators
 {
+    [ComVisible(true)]
     public abstract class BaseCodeGeneratorWithSite : BaseCodeGenerator, IObjectWithSite
     {
         private static Guid _codeDomInterfaceGuid;

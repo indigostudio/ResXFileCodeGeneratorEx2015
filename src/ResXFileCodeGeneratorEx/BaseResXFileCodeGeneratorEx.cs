@@ -23,6 +23,7 @@ using DMKSoftware;
 
 namespace DMKSoftware.CodeGenerators
 {
+    [ComVisible(true)]
     public abstract class BaseResXFileCodeGeneratorEx : BaseCodeGeneratorWithSite, IVsRefactorNotify
     {
 		private const string CSharpObfuscationAttributeFinderRegex = @"[ \f\r\t\v]*\[global::System.Reflection.ObfuscationAttribute\(.*\)\][ \f\r\t\v]*\n";
@@ -127,11 +128,11 @@ namespace DMKSoftware.CodeGenerators
 					if (resourceNamespace != null)
 						codeCompileUnit = Tools.StronglyTypedResourceBuilderEx.Create(this.GetType(),
 							nodeDictionary, inputFileNameWithoutExtension, base.FileNameSpace, resourceNamespace,
-							this.CodeProvider, GenerateInternalClass, unmatchableResources);
+							this.CodeProvider, GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true);
 					else
 						codeCompileUnit = Tools.StronglyTypedResourceBuilderEx.Create(this.GetType(),
 							nodeDictionary, inputFileNameWithoutExtension, base.FileNameSpace, this.CodeProvider,
-							GenerateInternalClass, unmatchableResources);
+							GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true);
 
 					if (base.CodeGeneratorProgress != null)
 					{

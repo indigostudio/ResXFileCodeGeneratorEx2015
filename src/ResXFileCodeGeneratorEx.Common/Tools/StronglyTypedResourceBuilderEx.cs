@@ -70,19 +70,19 @@ namespace DMKSoftware.CodeGenerators.Tools
              };
 		}
 
-		/// <summary>Generates a class file that contains strongly-typed properties that match the resources referenced in the specified collection.</summary>
-		/// <returns>A <see cref="T:System.CodeDom.CodeCompileUnit"></see> container.</returns>
-		/// <param name="baseName">The name of the class to be generated.</param>
-		/// <param name="internalClass">true to generate an internal class; false to generate a public class.</param>
-		/// <param name="unmatchable">A list that contains each resource name for which a property cannot be generated. Typically, a property cannot be generated because the resource name is not a valid identifier.</param>
-		/// <param name="generatedCodeNamespace">The namespace of the class to be generated.</param>
-		/// <param name="codeProvider">A <see cref="T:System.CodeDom.Compiler.CodeDomProvider"></see>  class that provides the language in which the class will be generated.</param>
-		/// <param name="resourceList">An <see cref="T:System.Collections.IDictionary"></see> collection where each dictionary entry key/value pair is the name of a resource and the value of the resource.</param>
-		/// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
-		public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable)
+        /// <summary>Generates a class file that contains strongly-typed properties that match the resources referenced in the specified collection.</summary>
+        /// <returns>A <see cref="T:System.CodeDom.CodeCompileUnit"></see> container.</returns>
+        /// <param name="baseName">The name of the class to be generated.</param>
+        /// <param name="internalClass">true to generate an internal class; false to generate a public class.</param>
+        /// <param name="unmatchable">A list that contains each resource name for which a property cannot be generated. Typically, a property cannot be generated because the resource name is not a valid identifier.</param>
+        /// <param name="generatedCodeNamespace">The namespace of the class to be generated.</param>
+        /// <param name="codeProvider">A <see cref="T:System.CodeDom.Compiler.CodeDomProvider"></see>  class that provides the language in which the class will be generated.</param>
+        /// <param name="resourceList">An <see cref="T:System.Collections.IDictionary"></see> collection where each dictionary entry key/value pair is the name of a resource and the value of the resource.</param>
+        /// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
+        public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName, string generatedCodeNamespace,
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
 		{
-			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable);
+			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -96,9 +96,9 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
 		{
-			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable);
+			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources referenced in the specified collection.</summary>
@@ -114,7 +114,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName,
 			string generatedCodeNamespace, string resourcesNamespace, CodeDomProvider codeProvider,
-			bool internalClass, List<ResourceErrorData> unmatchable)
+			bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
 		{
 			if (null == resourceList)
 				throw new ArgumentNullException("resourceList");
@@ -150,7 +150,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace,
-				resourcesNamespace, codeProvider, internalClass, unmatchable);
+				resourcesNamespace, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -165,7 +165,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable)
+			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
 		{
 			if (null == resxFile)
 				throw new ArgumentNullException("resxFile");
@@ -191,7 +191,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace, resourcesNamespace,
-				codeProvider, internalClass, unmatchable);
+				codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
 		}
 
 		private static void AddGeneratedCodeAttributeForMember(CodeTypeMember typeMember)
@@ -213,7 +213,6 @@ namespace DMKSoftware.CodeGenerators.Tools
 		private static bool DefineResourceFetchingProperty(string propertyName, string resourceName,
 			ResourceData resourceData, CodeTypeDeclaration resourceClass, bool internalClass, bool useStatic)
 		{
-			CodeMethodReturnStatement propertyReturnStatement;
 			CodeMemberProperty resourceProperty = new CodeMemberProperty();
 			resourceProperty.Name = propertyName;
 			resourceProperty.HasGet = true;
@@ -239,16 +238,13 @@ namespace DMKSoftware.CodeGenerators.Tools
 			if (useStatic)
 				resourceProperty.Attributes |= MemberAttributes.Static;
 
-			CodePropertyReferenceExpression resMgrPropertyReferenceExpression = new CodePropertyReferenceExpression(null, ResMgrPropertyName);
-			CodeFieldReferenceExpression cultureInfoFieldReference = new CodeFieldReferenceExpression(useStatic ? null : ((CodeExpression)new CodeThisReferenceExpression()), CultureInfoFieldName);
 			bool stringResourceDataType = typeof(string) == resourceDataType;
 			bool memoryStreamResourceDataType = (typeof(UnmanagedMemoryStream) == resourceDataType) ||
 				(typeof(MemoryStream) == resourceDataType);
-			string methodName = "GetObject";
+
 			string codeCommentString = string.Format(CultureInfo.CurrentCulture, NonStringPropertyComment, resourceName);
 			if (stringResourceDataType)
 			{
-				methodName = "GetString";
 				string resourceStringValue = resourceData.ValueIfString;
 				if (resourceStringValue.Length > DocCommentLengthThreshold)
 				{
@@ -260,30 +256,52 @@ namespace DMKSoftware.CodeGenerators.Tools
 				codeCommentString = string.Format(CultureInfo.CurrentCulture,
 					StringPropertyComment, resourceStringValue);
 			}
-			else if (memoryStreamResourceDataType)
-				methodName = "GetStream";
 
 			AddComments(resourceProperty, codeCommentString);
 
-			CodeExpression resourceNameExpression = useStatic ?
-				(CodeExpression)(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression(new CodeTypeReference(ResourceNamesNestedClassName)), propertyName)) :
-				(CodeExpression)(new CodePrimitiveExpression(resourceName));
+            CodeMethodReturnStatement propertyReturnStatement;
+            var invokeCodeExpression = GetResourceResolveExpression(propertyName, resourceName, resourceData, useStatic);
+            if (stringResourceDataType || memoryStreamResourceDataType)
+                propertyReturnStatement = new CodeMethodReturnStatement(invokeCodeExpression);
+            else
+                propertyReturnStatement = new CodeMethodReturnStatement(new CodeCastExpression(resourceDataTypeReference, invokeCodeExpression));
 
-			CodeExpression invokeCodeExpression = new CodeMethodInvokeExpression(resMgrPropertyReferenceExpression, methodName,
-				new CodeExpression[] { resourceNameExpression, cultureInfoFieldReference });
-			if (stringResourceDataType || memoryStreamResourceDataType)
-				propertyReturnStatement = new CodeMethodReturnStatement(invokeCodeExpression);
-			else
-				propertyReturnStatement = new CodeMethodReturnStatement(new CodeCastExpression(resourceDataTypeReference, invokeCodeExpression));
-
-			resourceProperty.GetStatements.Add(propertyReturnStatement);
+            resourceProperty.GetStatements.Add(propertyReturnStatement);
 
 			resourceClass.Members.Add(resourceProperty);
 
 			return true;
 		}
 
-		private static void AddComments(CodeTypeMember codeTypeMember, params string[] comments)
+        private static CodeExpression GetResourceResolveExpression(string propertyName, string resourceName, ResourceData resourceData, bool useStatic)
+        {
+            Type resourceDataType = resourceData.Type;
+            bool stringResourceDataType = typeof(string) == resourceDataType;
+            bool memoryStreamResourceDataType = (typeof(UnmanagedMemoryStream) == resourceDataType) ||
+                (typeof(MemoryStream) == resourceDataType);
+
+            CodePropertyReferenceExpression resMgrPropertyReferenceExpression = new CodePropertyReferenceExpression(null, ResMgrPropertyName);
+            CodeFieldReferenceExpression cultureInfoFieldReference = new CodeFieldReferenceExpression(useStatic ? null : ((CodeExpression)new CodeThisReferenceExpression()), CultureInfoFieldName);
+
+            string methodName = "GetObject";
+            if (stringResourceDataType)
+            {
+                methodName = "GetString";
+            }
+            else if (memoryStreamResourceDataType)
+                methodName = "GetStream";
+
+            CodeExpression resourceNameExpression = useStatic ?
+                (CodeExpression)(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression(new CodeTypeReference(ResourceNamesNestedClassName)), propertyName)) :
+                (CodeExpression)(new CodePrimitiveExpression(resourceName));
+
+            CodeExpression invokeCodeExpression = new CodeMethodInvokeExpression(resMgrPropertyReferenceExpression, methodName,
+                new CodeExpression[] { resourceNameExpression, cultureInfoFieldReference });
+
+            return invokeCodeExpression;
+        }
+
+        private static void AddComments(CodeTypeMember codeTypeMember, params string[] comments)
 		{
 			if (null == codeTypeMember)
 				throw new ArgumentNullException("codeTypeMember");
@@ -301,7 +319,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 		private static void DefineFormattedResourceFetchingMethod(string methodName, string propertyName,
 			string resourceName, ResourceData resourceData, CodeTypeDeclaration resourceClass,
-			bool internalClass, bool useStatic, int numberOfArguments)
+			bool internalClass, bool useStatic, int numberOfArguments, bool generateOnlyMethodsForFormattedResources)
 		{
 			Type stringType = resourceData.Type;
 			Type objectType = typeof(object);
@@ -359,9 +377,11 @@ namespace DMKSoftware.CodeGenerators.Tools
 				string.Format(StubMethodReturnValueComment, propertyName);
 			resourceFormatMethod.Comments.Add(new CodeCommentStatement(returnValueCommentString, true));
 
-			CodePropertyReferenceExpression resPropertyReferenceExpression = new CodePropertyReferenceExpression(null, propertyName);
+            var resourceResolveExpression = generateOnlyMethodsForFormattedResources ? 
+                GetResourceResolveExpression(propertyName, resourceName, resourceData, useStatic) :
+                new CodePropertyReferenceExpression(null, propertyName);
 
-			if (numberOfArguments > 0)
+            if (numberOfArguments > 0)
 			{
 				CodeFieldReferenceExpression cultureInfoFieldReference = new CodeFieldReferenceExpression(useStatic ? null : ((CodeExpression)new CodeThisReferenceExpression()),
 					CultureInfoFieldName);
@@ -370,7 +390,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 					"Format");
 				CodeExpression[] formatExpressionParameters = new CodeExpression[2 + numberOfArguments];
 				formatExpressionParameters[0] = cultureInfoFieldReference;
-				formatExpressionParameters[1] = resPropertyReferenceExpression;
+				formatExpressionParameters[1] = resourceResolveExpression;
 				for (int index = 0; index < numberOfArguments; ++index)
 				{
 					CodeVariableReferenceExpression parameterReference = new CodeVariableReferenceExpression("arg" +
@@ -383,7 +403,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 				methodReturnStatement = new CodeMethodReturnStatement(stringFormatExpression);
 			}
 			else
-				methodReturnStatement = new CodeMethodReturnStatement(resPropertyReferenceExpression);
+				methodReturnStatement = new CodeMethodReturnStatement(resourceResolveExpression);
 
 			resourceFormatMethod.Statements.Add(methodReturnStatement);
 
@@ -576,7 +596,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 		private static CodeCompileUnit InternalCreate(Type callerType, Dictionary<string, ResourceData> resourceList,
 			string baseName, string generatedCodeNamespace, string resourcesNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
 		{
 			if (null == baseName)
 				throw new ArgumentNullException("baseName");
@@ -684,7 +704,20 @@ namespace DMKSoftware.CodeGenerators.Tools
 					resourceNameFieldIndex = resourceNamesNestedClassDeclaration.Members.Add(resourceNameField);
 				}
 
-				if (!DefineResourceFetchingProperty(validResourceEntry.Key, initialResourceName,
+                bool addProperty = true;
+                if (generateOnlyMethodsForFormattedResources)
+                {
+                    try
+                    {
+                        // Do not generate properties for streings with parameters
+                        addProperty = FormatValidator.Parse(validResourceEntry.Value.ValueIfString) == 0;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (addProperty && !DefineResourceFetchingProperty(validResourceEntry.Key, initialResourceName,
 					validResourceEntry.Value, classTypeDeclaration, internalClass, useStatic))
 				{
 					if (useStatic)
@@ -706,7 +739,11 @@ namespace DMKSoftware.CodeGenerators.Tools
 					int numberOfArguments = FormatValidator.Parse(formatMethodEntry.Value.ValueIfString);
 					if (numberOfArguments > 0)
 					{
-						string methodName = formatMethodEntry.Key + FormatSuffix;
+                        string methodName = formatMethodEntry.Key;
+                        if (!generateOnlyMethodsForFormattedResources)
+                        {
+                            methodName += FormatSuffix;
+                        }
 
 						// Check for duplicate method names
 						bool uniqueMethodName = true;
@@ -733,7 +770,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 							DefineFormattedResourceFetchingMethod(methodName, formatMethodEntry.Key,
 								initialResourceName, formatMethodEntry.Value, classTypeDeclaration,
-								internalClass, useStatic, numberOfArguments);
+								internalClass, useStatic, numberOfArguments, generateOnlyMethodsForFormattedResources);
 						}
 						else
 						{

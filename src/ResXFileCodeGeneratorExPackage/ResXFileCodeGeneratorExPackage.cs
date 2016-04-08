@@ -33,6 +33,9 @@ namespace Company.VSPackage2
     [ProvideCodeGenerator(typeof(DMKSoftware.CodeGenerators.ResXFileCodeGeneratorEx), "ResXFileCodeGeneratorEx", "", true)]
     [ProvideCodeGeneratorExtension("ResXFileCodeGeneratorEx", ".resx", ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid)]
     [ProvideCodeGeneratorExtension("ResXFileCodeGeneratorEx", ".resx", ProjectSystem = ProvideCodeGeneratorAttribute.VisualBasicProjectGuid)]
+    [ProvideCodeGenerator(typeof(DMKSoftware.CodeGenerators.InternalResXFileCodeGeneratorEx), "InternalResXFileCodeGeneratorEx", "", true)]
+    [ProvideCodeGeneratorExtension("InternalResXFileCodeGeneratorEx", ".resx", ProjectSystem = ProvideCodeGeneratorAttribute.CSharpProjectGuid)]
+    [ProvideCodeGeneratorExtension("InternalResXFileCodeGeneratorEx", ".resx", ProjectSystem = ProvideCodeGeneratorAttribute.VisualBasicProjectGuid)]
     [Guid("7077132D-1E2D-4E27-A23A-59EC7E16AA27")]
     public sealed class ResXFileCodeGeneratorExPackage : Package
     {
