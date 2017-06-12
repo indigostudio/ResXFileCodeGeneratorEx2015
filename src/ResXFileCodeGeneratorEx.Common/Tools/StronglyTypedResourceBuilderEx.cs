@@ -543,24 +543,20 @@ namespace DMKSoftware.CodeGenerators.Tools
 			CodeMethodInvokeExpression monitorEnterMethodInvokeExpression = new CodeMethodInvokeExpression(monitorEnterMethodReference,
 				internalSyncObjectPropertyReference);
 
-			CodePropertyReferenceExpression assemblyPropertyReference = new CodePropertyReferenceExpression(new CodeTypeOfExpression(new CodeTypeReference(resourceClass.Name)),
-				"Assembly");
-			CodeObjectCreateExpression resourceManagerCreateExpression = new CodeObjectCreateExpression(resourceManagerTypeReference,
-				new CodePrimitiveExpression(fullClassName), assemblyPropertyReference);
-
-			CodeMethodReferenceExpression interlockedExchangeMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(interlockedCodeTypeReference),
-				"Exchange");
-			CodeMethodInvokeExpression interlockedExchangeMethodInvokeExpression = new CodeMethodInvokeExpression(interlockedExchangeMethodReference,
-				new CodeDirectionExpression(FieldDirection.Ref, resourceManagerFieldReference), resourceManagerCreateExpression);
-
-			CodeMethodReferenceExpression monitorExitMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference),
+            var interlockedExchangeMethodBlock = new List<CodeStatement>(5);
+            interlockedExchangeMethodBlock.Add(new CodeSnippetStatement("#if LEGACY_REFLECTION"));
+            interlockedExchangeMethodBlock.Add(GetInterlockedExchangeMethodStatement(resourceClass, fullClassName, resourceManagerTypeReference, resourceManagerFieldReference, interlockedCodeTypeReference, legacy: true));
+            interlockedExchangeMethodBlock.Add(new CodeSnippetStatement("#else"));
+            interlockedExchangeMethodBlock.Add(GetInterlockedExchangeMethodStatement(resourceClass, fullClassName, resourceManagerTypeReference, resourceManagerFieldReference, interlockedCodeTypeReference, legacy: false));
+            interlockedExchangeMethodBlock.Add(new CodeSnippetStatement("#endif"));
+            
+            CodeMethodReferenceExpression monitorExitMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference),
 				"Exit");
 			CodeMethodInvokeExpression monitorExitMethodInvokeExpression = new CodeMethodInvokeExpression(monitorExitMethodReference,
 				internalSyncObjectPropertyReference);
 
 			CodeTryCatchFinallyStatement tryFinallyStatement = new CodeTryCatchFinallyStatement();
-			tryFinallyStatement.TryStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression,
-				new CodeExpressionStatement(interlockedExchangeMethodInvokeExpression)));
+			tryFinallyStatement.TryStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression, interlockedExchangeMethodBlock.ToArray()));
 			tryFinallyStatement.FinallyStatements.Add(monitorExitMethodInvokeExpression);
 
 			resourceManagerProperty.GetStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression,
@@ -594,7 +590,33 @@ namespace DMKSoftware.CodeGenerators.Tools
 			AddComments(cultureProperty, CulturePropertyComment1, CulturePropertyComment2);
 		}
 
-		private static CodeCompileUnit InternalCreate(Type callerType, Dictionary<string, ResourceData> resourceList,
+        private static CodeExpressionStatement GetInterlockedExchangeMethodStatement(CodeTypeDeclaration resourceClass, string fullClassName, CodeTypeReference resourceManagerTypeReference, CodeFieldReferenceExpression resourceManagerFieldReference, CodeTypeReference interlockedCodeTypeReference, bool legacy)
+        {
+            CodeExpression typeInfo;
+            if (legacy)
+            {
+                typeInfo = new CodeTypeOfExpression(new CodeTypeReference(resourceClass.Name));
+            }
+            else
+            {
+                typeInfo = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeOfExpression(new CodeTypeReference(resourceClass.Name)), "GetTypeInfo"));
+            }
+
+            CodePropertyReferenceExpression assemblyPropertyReference = new CodePropertyReferenceExpression(typeInfo, "Assembly");
+
+            CodeObjectCreateExpression resourceManagerCreateExpression = new CodeObjectCreateExpression(resourceManagerTypeReference,
+                new CodePrimitiveExpression(fullClassName), assemblyPropertyReference);
+
+            CodeMethodReferenceExpression interlockedExchangeMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(interlockedCodeTypeReference),
+                "Exchange");
+
+            CodeMethodInvokeExpression interlockedExchangeMethodInvokeExpression = new CodeMethodInvokeExpression(interlockedExchangeMethodReference,
+                new CodeDirectionExpression(FieldDirection.Ref, resourceManagerFieldReference), resourceManagerCreateExpression);
+
+            return new CodeExpressionStatement(interlockedExchangeMethodInvokeExpression);
+        }
+
+        private static CodeCompileUnit InternalCreate(Type callerType, Dictionary<string, ResourceData> resourceList,
 			string baseName, string generatedCodeNamespace, string resourcesNamespace,
 			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
@@ -629,12 +651,13 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 			CodeCompileUnit codeCompileUnit = new CodeCompileUnit();
 			codeCompileUnit.ReferencedAssemblies.Add("System.dll");
-			codeCompileUnit.UserData.Add("AllowLateBound", false);
+            codeCompileUnit.UserData.Add("AllowLateBound", false);
 			codeCompileUnit.UserData.Add("RequireVariableDeclaration", true);
 
 			CodeNamespace codeNamespace = new CodeNamespace(generatedCodeNamespace);
 			codeNamespace.Imports.Add(new CodeNamespaceImport("System"));
-			codeCompileUnit.Namespaces.Add(codeNamespace);
+            codeNamespace.Imports.Add(new CodeNamespaceImport("System.Reflection"));
+            codeCompileUnit.Namespaces.Add(codeNamespace);
 
 			CodeTypeDeclaration classTypeDeclaration = new CodeTypeDeclaration(verifiedBaseName);
 			codeNamespace.Types.Add(classTypeDeclaration);
