@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="7a767aad-ab4f-4916-900e-1f3e8eef7a91" Version="2.7" Language="en-US" Publisher="DMK Software; EZSlaver" />
+    <Identity Id="7a767aad-ab4f-4916-900e-1f3e8eef7a91" Version="2.8" Language="en-US" Publisher="DMK Software; EZSlaver" />
     <DisplayName>Indigo Strongly Typed Resource Generator</DisplayName>
     <Description xml:space="preserve">This tool is the work of Dmytro Kryvko (DMK Software) - I haven't changed a thing in the extension intself. However, this extension was moved to .Net 4.5 and put into a Visual Studio Package file (.vsix). 
 This is the original description by the creator:

@@ -128,11 +128,11 @@ namespace DMKSoftware.CodeGenerators
 					if (resourceNamespace != null)
 						codeCompileUnit = Tools.StronglyTypedResourceBuilderEx.Create(this.GetType(),
 							nodeDictionary, inputFileNameWithoutExtension, base.FileNameSpace, resourceNamespace,
-							this.CodeProvider, GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true);
+							this.CodeProvider, GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true, generateObfuscationAttribute: false);
 					else
 						codeCompileUnit = Tools.StronglyTypedResourceBuilderEx.Create(this.GetType(),
 							nodeDictionary, inputFileNameWithoutExtension, base.FileNameSpace, this.CodeProvider,
-							GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true);
+							GenerateInternalClass, unmatchableResources, generateOnlyMethodsForFormattedResources: true, generateObfuscationAttribute: false);
 
 					if (base.CodeGeneratorProgress != null)
 					{

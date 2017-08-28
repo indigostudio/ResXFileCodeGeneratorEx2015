@@ -34,7 +34,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		private const string InternalSyncObjectPropertyName = "InternalSyncObject";
 		private const string FormatSuffix = "Format";
 		private const string ResourceNamesNestedClassName = "ResourceNames";
-		private const string ConstructorCommentFormat = "Initializes a {0} object.";
+        private const string ConstructorCommentFormat = "Initializes a {0} object.";
 		private const string NamesNestedClassDocComment = "Lists all the resource names as constant string fields.";
 		private const string ResourceNameFieldCommentFormat = "Stores the resource name '{0}'.";
 		private const string MismatchedResourceName = "When passing ResXDataNodes as the IDictionary values to StronglyTypedResourceBuilderEx.Create, the keys must match the corresponding values for ResXDataNode.Name.  Key name: '{0}', ResXDataNode.Name: '{1}'.";
@@ -80,9 +80,9 @@ namespace DMKSoftware.CodeGenerators.Tools
         /// <param name="resourceList">An <see cref="T:System.Collections.IDictionary"></see> collection where each dictionary entry key/value pair is the name of a resource and the value of the resource.</param>
         /// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
         public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
-			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+			return Create(callerType, resourceList, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -96,9 +96,9 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
-			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+			return Create(callerType, resxFile, baseName, generatedCodeNamespace, null, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources referenced in the specified collection.</summary>
@@ -114,7 +114,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <exception cref="T:System.ArgumentNullException">resourceList, basename, or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, IDictionary resourceList, string baseName,
 			string generatedCodeNamespace, string resourcesNamespace, CodeDomProvider codeProvider,
-			bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == resourceList)
 				throw new ArgumentNullException("resourceList");
@@ -150,7 +150,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace,
-				resourcesNamespace, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+				resourcesNamespace, codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		/// <summary>Generates a class file that contains strongly-typed properties that match the resources in the specified .resx file.</summary>
@@ -165,7 +165,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 		/// <param name="resxFile">The name of a .resx file used as input.</param>
 		/// <exception cref="T:System.ArgumentNullException">basename or codeProvider is null.</exception>
 		public static CodeCompileUnit Create(Type callerType, string resxFile, string baseName, string generatedCodeNamespace,
-			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			string resourcesNamespace, CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == resxFile)
 				throw new ArgumentNullException("resxFile");
@@ -191,7 +191,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 			}
 
 			return InternalCreate(callerType, resourceDataDictionary, baseName, generatedCodeNamespace, resourcesNamespace,
-				codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources);
+				codeProvider, internalClass, unmatchable, generateOnlyMethodsForFormattedResources, generateObfuscationAttribute);
 		}
 
 		private static void AddGeneratedCodeAttributeForMember(CodeTypeMember typeMember)
@@ -453,7 +453,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 			// Generation of the _resourceManager field
 			CodeTypeReference resourceManagerTypeReference = new CodeTypeReference(typeof(ResourceManager), CodeTypeReferenceOptions.GlobalReference);
-			CodeMemberField resourceManagerMemberField = new CodeMemberField(resourceManagerTypeReference, ResMgrFieldName);
+            CodeMemberField resourceManagerMemberField = new CodeMemberField(resourceManagerTypeReference, ResMgrFieldName);
 			resourceManagerMemberField.Attributes = MemberAttributes.Private;
 			if (useStatic)
 				resourceManagerMemberField.Attributes |= MemberAttributes.Static;
@@ -532,39 +532,22 @@ namespace DMKSoftware.CodeGenerators.Tools
 			resourceManagerProperty.CustomAttributes.Add(codeAttributeDeclaration);
 
 			CodeFieldReferenceExpression resourceManagerFieldReference = new CodeFieldReferenceExpression(null, ResMgrFieldName);
-			CodeMethodInvokeExpression referenceEqualsMethodInvokeExpression = new CodeMethodInvokeExpression(referenceEqualsMethodReference,
-				resourceManagerFieldReference, new CodePrimitiveExpression(null));
+			CodeMethodInvokeExpression referenceEqualsMethodInvokeExpression = new CodeMethodInvokeExpression(referenceEqualsMethodReference, resourceManagerFieldReference, new CodePrimitiveExpression(null));
 
 			CodeTypeReference monitorCodeTypeReference = new CodeTypeReference(typeof(Monitor), CodeTypeReferenceOptions.GlobalReference);
 
-			CodeMethodReferenceExpression monitorEnterMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference),
-				"Enter");
+			CodeMethodReferenceExpression monitorEnterMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference), "Enter");
 			CodePropertyReferenceExpression internalSyncObjectPropertyReference = new CodePropertyReferenceExpression(null, InternalSyncObjectPropertyName);
-			CodeMethodInvokeExpression monitorEnterMethodInvokeExpression = new CodeMethodInvokeExpression(monitorEnterMethodReference,
-				internalSyncObjectPropertyReference);
+			CodeMethodInvokeExpression monitorEnterMethodInvokeExpression = new CodeMethodInvokeExpression(monitorEnterMethodReference, internalSyncObjectPropertyReference);
 
-			CodePropertyReferenceExpression assemblyPropertyReference = new CodePropertyReferenceExpression(new CodeTypeOfExpression(new CodeTypeReference(resourceClass.Name)),
-				"Assembly");
-			CodeObjectCreateExpression resourceManagerCreateExpression = new CodeObjectCreateExpression(resourceManagerTypeReference,
-				new CodePrimitiveExpression(fullClassName), assemblyPropertyReference);
-
-			CodeMethodReferenceExpression interlockedExchangeMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(interlockedCodeTypeReference),
-				"Exchange");
-			CodeMethodInvokeExpression interlockedExchangeMethodInvokeExpression = new CodeMethodInvokeExpression(interlockedExchangeMethodReference,
-				new CodeDirectionExpression(FieldDirection.Ref, resourceManagerFieldReference), resourceManagerCreateExpression);
-
-			CodeMethodReferenceExpression monitorExitMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference),
-				"Exit");
-			CodeMethodInvokeExpression monitorExitMethodInvokeExpression = new CodeMethodInvokeExpression(monitorExitMethodReference,
-				internalSyncObjectPropertyReference);
+            CodeMethodReferenceExpression monitorExitMethodReference = new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(monitorCodeTypeReference), "Exit");
+			CodeMethodInvokeExpression monitorExitMethodInvokeExpression = new CodeMethodInvokeExpression(monitorExitMethodReference, internalSyncObjectPropertyReference);
 
 			CodeTryCatchFinallyStatement tryFinallyStatement = new CodeTryCatchFinallyStatement();
-			tryFinallyStatement.TryStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression,
-				new CodeExpressionStatement(interlockedExchangeMethodInvokeExpression)));
+			tryFinallyStatement.TryStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression, new CodeSnippetStatement($"                            global::System.Threading.Interlocked.Exchange(ref _resourceManager, new ResourceManagerWithCache(\"{fullClassName}\", typeof({resourceClass.Name}).Assembly));")));
 			tryFinallyStatement.FinallyStatements.Add(monitorExitMethodInvokeExpression);
 
-			resourceManagerProperty.GetStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression,
-				new CodeExpressionStatement(monitorEnterMethodInvokeExpression), tryFinallyStatement));
+			resourceManagerProperty.GetStatements.Add(new CodeConditionStatement(referenceEqualsMethodInvokeExpression, new CodeExpressionStatement(monitorEnterMethodInvokeExpression), tryFinallyStatement));
 			resourceManagerProperty.GetStatements.Add(new CodeMethodReturnStatement(resourceManagerFieldReference));
 
 			AddComments(resourceManagerProperty, ResMgrPropertyComment);
@@ -596,7 +579,7 @@ namespace DMKSoftware.CodeGenerators.Tools
 
 		private static CodeCompileUnit InternalCreate(Type callerType, Dictionary<string, ResourceData> resourceList,
 			string baseName, string generatedCodeNamespace, string resourcesNamespace,
-			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources)
+			CodeDomProvider codeProvider, bool internalClass, List<ResourceErrorData> unmatchable, bool generateOnlyMethodsForFormattedResources, bool generateObfuscationAttribute)
 		{
 			if (null == baseName)
 				throw new ArgumentNullException("baseName");
@@ -653,11 +636,14 @@ namespace DMKSoftware.CodeGenerators.Tools
 				CodeTypeReferenceOptions.GlobalReference);
 			classTypeDeclaration.CustomAttributes.Add(new CodeAttributeDeclaration(debuggerNonUserCodeTypeReference));
 
-			CodeAttributeDeclaration obfuscationAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObfuscationAttribute)));
-			obfuscationAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
-			obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("Exclude", new CodePrimitiveExpression(true)));
-			obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("ApplyToMembers", new CodePrimitiveExpression(true)));
-			classTypeDeclaration.CustomAttributes.Add(obfuscationAttributeTypeDeclaration);
+            if (generateObfuscationAttribute)
+            {
+                CodeAttributeDeclaration obfuscationAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(ObfuscationAttribute)));
+                obfuscationAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
+                obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("Exclude", new CodePrimitiveExpression(true)));
+                obfuscationAttributeTypeDeclaration.Arguments.Add(new CodeAttributeArgument("ApplyToMembers", new CodePrimitiveExpression(true)));
+                classTypeDeclaration.CustomAttributes.Add(obfuscationAttributeTypeDeclaration);
+            }
 
 			CodeAttributeDeclaration suppressAttributeTypeDeclaration = new CodeAttributeDeclaration(new CodeTypeReference(typeof(SuppressMessageAttribute)));
 			suppressAttributeTypeDeclaration.AttributeType.Options = CodeTypeReferenceOptions.GlobalReference;
@@ -674,6 +660,28 @@ namespace DMKSoftware.CodeGenerators.Tools
 				StringComparer.InvariantCultureIgnoreCase);
 
 			CodeTypeReference stringTypeReference = new CodeTypeReference(typeof(string));
+
+            classTypeDeclaration.Members.Add(new CodeSnippetTypeMember(@"        private class ResourceManagerWithCache : System.Resources.ResourceManager
+        {
+            private static System.Collections.Generic.Dictionary<System.Tuple<string, string>, string> _cache = new System.Collections.Generic.Dictionary<System.Tuple<string, string>, string>();
+            public ResourceManagerWithCache(System.Type resourceSource) : base(resourceSource) { }
+            public ResourceManagerWithCache(string baseName, System.Reflection.Assembly assembly) : base(baseName, assembly) { }
+            public override string GetString(string name, System.Globalization.CultureInfo culture)
+            {
+                string result;
+                culture = culture ?? System.Globalization.CultureInfo.CurrentUICulture;
+                var key = System.Tuple.Create(culture.Name, name);
+                lock (_cache)
+                {
+                    if (!_cache.TryGetValue(key, out result))
+                    {
+                        _cache[key] = result = base.GetString(name, culture);
+                    }
+                }
+
+                return result;
+            }
+        }"));
 
 			// Declare the nested Names class if static usage is supported
 			CodeTypeDeclaration resourceNamesNestedClassDeclaration = null;
